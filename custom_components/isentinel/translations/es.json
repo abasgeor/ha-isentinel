@@ -1,0 +1,32 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "iSentinel",
+        "description": "Inicia sesión con tu cuenta iSentinel (correo + contraseña).",
+        "data": { "email": "Correo", "password": "Contraseña" }
+      },
+      "tanks": {
+        "title": "Selecciona tanques",
+        "description": "Elige el/los tanque(s) a mostrar en este Home Assistant.",
+        "data": { "tanks": "Tanques" }
+      }
+    },
+    "error": {
+      "invalid_auth": "Correo o contraseña inválidos.",
+      "cannot_connect": "No se pudo conectar con la nube de iSentinel."
+    },
+    "abort": { "already_configured": "Esta cuenta de iSentinel ya está configurada." }
+  },
+  "entity": {
+    "sensor": {
+      "level": { "name": "Nivel del tanque" },
+      "signal": { "name": "Señal" },
+      "capacity": { "name": "Capacidad" },
+      "last_refill": { "name": "Última recarga" }
+    },
+    "binary_sensor": {
+      "low": { "name": "Gas bajo" }
+    }
+  }
+}

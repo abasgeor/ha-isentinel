@@ -1,0 +1,32 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "iSentinel",
+        "description": "Sign in with your iSentinel account (email + password).",
+        "data": { "email": "Email", "password": "Password" }
+      },
+      "tanks": {
+        "title": "Select tanks",
+        "description": "Choose the tank(s) to show on this Home Assistant instance.",
+        "data": { "tanks": "Tanks" }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid email or password.",
+      "cannot_connect": "Could not reach the iSentinel cloud."
+    },
+    "abort": { "already_configured": "This iSentinel account is already configured." }
+  },
+  "entity": {
+    "sensor": {
+      "level": { "name": "Tank level" },
+      "signal": { "name": "Signal" },
+      "capacity": { "name": "Capacity" },
+      "last_refill": { "name": "Last refill" }
+    },
+    "binary_sensor": {
+      "low": { "name": "Low gas" }
+    }
+  }
+}
