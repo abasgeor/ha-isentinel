@@ -20,7 +20,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from . import IsentinelConfigEntry
-from .const import CONF_AREA, CONF_TANKS, DOMAIN, MANUFACTURER
+from .const import CONF_AREA, CONF_REFILL, CONF_TANKS, DOMAIN, MANUFACTURER
 from .coordinator import IsentinelCoordinator
 
 
@@ -144,8 +144,28 @@ class IsentinelSensor(CoordinatorEntity[IsentinelCoordinator], SensorEntity):
     def available(self) -> bool:
         return super().available and self._tank_id in self.coordinator.data
 
+    def _effective_refill(self) -> tuple[dict[str, Any], bool]:
+        """Return (refill, is_manual). A manual override wins when newer than the API event."""
+        api = self._tank.get("last_fill_event") or {}
+        overrides = self.coordinator.config_entry.data.get(CONF_REFILL) or {}
+        ov = overrides.get(self._tank_id)
+        if not ov or not ov.get("date"):
+            return api, False
+        api_dt = (
+            dt_util.parse_datetime(str(api["date"]).replace(" ", "T"))
+            if api.get("date") else None
+        )
+        ov_dt = dt_util.parse_datetime(str(ov["date"]).replace(" ", "T"))
+        if ov_dt and (api_dt is None or ov_dt >= api_dt):
+            return ov, True
+        return api, False
+
     @property
     def native_value(self) -> Any:
+        if self.entity_description.key == "last_refill":
+            refill, _ = self._effective_refill()
+            parsed = dt_util.parse_datetime(str(refill.get("date") or "").replace(" ", "T"))
+            return dt_util.as_local(parsed) if parsed else None
         return self.entity_description.value_fn(self._tank)
 
     @property
@@ -153,13 +173,24 @@ class IsentinelSensor(CoordinatorEntity[IsentinelCoordinator], SensorEntity):
         if self.entity_description.key != "level":
             return None
         t = self._tank
-        fill = t.get("last_fill_event") or {}
-        return {
+        refill, is_manual = self._effective_refill()
+        attrs: dict[str, Any] = {
             "alert_threshold": t.get("level_alert"),
             "capacity_liters": _num(t.get("tank_capacity")),
             "last_measurement": _last(t).get("date"),
-            "last_refill_date": fill.get("date"),
-            "last_refill_added_pct": fill.get("difference_tank_level"),
-            "last_refill_to_pct": fill.get("final_tank_level"),
+            "last_refill_date": refill.get("date"),
             "isentinel_id": self._tank_id,
         }
+        if is_manual:
+            liters = _num(refill.get("liters"))
+            price = _num(refill.get("price_per_liter"))
+            attrs["last_refill_source"] = "manual"
+            attrs["last_refill_liters"] = liters
+            attrs["last_refill_price_per_liter"] = price
+            attrs["last_refill_supplier"] = refill.get("supplier")
+            if liters is not None and price is not None:
+                attrs["last_refill_total_cost"] = round(liters * price, 2)
+        else:
+            attrs["last_refill_added_pct"] = refill.get("difference_tank_level")
+            attrs["last_refill_to_pct"] = refill.get("final_tank_level")
+        return attrs

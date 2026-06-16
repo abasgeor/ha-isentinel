@@ -12,5 +12,7 @@ SCAN_INTERVAL = timedelta(minutes=30)
 
 CONF_TANKS = "tanks"  # list of isentinel_id to expose on this HA instance
 CONF_AREA = "area"  # optional suggested area for the tank devices on this HA
+# optional per-tank manual refill override: {tank_id: {date, liters, price_per_liter, supplier}}
+CONF_REFILL = "refill_override"
 
 MANUFACTURER = "iSentinel"
